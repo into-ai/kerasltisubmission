@@ -24,7 +24,11 @@ kerasltisubmission
 
 """"""""
 
-This python package allows you to
+This python package allows you to submit your trained ``keras`` models to a
+``kerasltiprovider`` (see `here <https://github.com/into-ai/kerasltiprovider>`_)
+that proxies any
+`LTI <http://www.imsglobal.org/activity/learning-tools-interoperability>`_
+conforming learning platform for grading.
 
 .. code-block:: console
 
@@ -47,7 +51,9 @@ This python package allows you to
     provider.submit(submission)
 
 For a complete example, see `example.py <example.py>`_.
-Also see the `official documentation`_ for more information.
+Also see the `official documentation`_ as well as the
+`documentation <https://github.com/into-ai/kerasltiprovider>`_ of
+the ``kerasltiprovider``.
 
 .. _official documentation: https://kerasltisubmission.readthedocs.io
 
