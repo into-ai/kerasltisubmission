@@ -30,6 +30,9 @@ invoke = "*"
 m2r = "*"
 twine = "*"
 bump2version = "*"
+tensorflow = "*"
 
 [packages]
-kerasltisubmission = {path = ".", editable = true}
+kerasltisubmission = {path = ".",editable = true}
+numpy = "*"
+progressbar2 = "*"

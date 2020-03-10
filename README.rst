@@ -24,19 +24,32 @@ kerasltisubmission
 
 """"""""
 
-Your short description here. `into-ai.github.io/kerasltisubmission <https://into-ai.github.io/kerasltisubmission>`_
+This python package allows you to
 
 .. code-block:: console
 
     $ pip install kerasltisubmission
 
-See the `official documentation`_ for more information.
-
-.. _official documentation: https://kerasltisubmission.readthedocs.io
-
 .. code-block:: python
 
     import kerasltisubmission
+
+    # Looking for the provider?
+    # See https://github.com/into-ai/kerasltiprovider
+    provider = LTIProvider(
+        input_api_endpoint="http://localhost:8080",
+        submission_api_endpoint="http://localhost:8080/submit",
+        user_token="7dd7367c-40c2-43cb-a052-bb04e1d0a858",
+    )
+
+    # Submit your keras model
+    submission = Submission(assignment_id=12, model=model)
+    provider.submit(submission)
+
+For a complete example, see `example.py <example.py>`_.
+Also see the `official documentation`_ for more information.
+
+.. _official documentation: https://kerasltisubmission.readthedocs.io
 
 Development
 -----------
