@@ -32,7 +32,7 @@ test_requirements = [
     "pytest-sugar",
     "mypy",
     "pyfakefs",
-    "tensorflow==2.0.1"
+    "tensorflow==2.1.0"
 ]
 coverage_requirements = ["coverage", "codecov"]
 docs_requirements = ["sphinx>=2.0", "romnnn_sphinx_press_theme", "sphinxemoji"]
