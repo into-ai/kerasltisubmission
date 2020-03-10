@@ -30,7 +30,7 @@ invoke = "*"
 m2r = "*"
 twine = "*"
 bump2version = "*"
-tensorflow = "*"
+tensorflow = "==2.0.0b1"
 
 [packages]
 kerasltisubmission = {path = ".",editable = true}
