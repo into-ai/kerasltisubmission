@@ -84,7 +84,7 @@ class LTIProvider:
             raise KerasLTISubmissionConnectionFailedException(
                 self.submission_api_endpoint, e
             ) from None
-        if r.status_code == 200 and rr.get("success"):
+        if r.status_code == 200 and rr.get("error") is None:
             log.debug(
                 f"Sent {len(predictions)} predictions to the provider for grading"
             )
