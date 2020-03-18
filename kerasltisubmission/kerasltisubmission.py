@@ -2,6 +2,7 @@
 
 """Main module."""
 
+import typing
 from typing import TYPE_CHECKING
 
 import kerasltisubmission.provider as provider
@@ -20,3 +21,9 @@ class Submission:
     def submit(self, server: provider.LTIProvider) -> None:
         # Convenience method, it is preferred to use the server interface in the first place
         server.submit(self)
+
+    def __eq__(self, other: typing.Any) -> bool:
+        if not isinstance(other, Submission):
+            return NotImplemented
+
+        return self.assignment_id == other.assignment_id and self.model == other.model
