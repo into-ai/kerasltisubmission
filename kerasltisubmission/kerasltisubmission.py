@@ -19,6 +19,15 @@ class Submission:
         self.model = model
 
     def submit(self, server: provider.LTIProvider) -> None:
+        if(model.input_shape != (None, 28, 28)):
+            print("Wrong input shape. Expected: (None, 28, 28), Found: ", 
+                  model.input_shape)
+            return
+        if(model.output_shape != (None, 10)):
+            print("Wrong output shape. Expected: (None, 28, 28), Found: ", 
+            model.output_shape)
+            return
+
         # Convenience method, it is preferred to use the server interface in the first place
         server.submit(self)
 
