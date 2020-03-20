@@ -60,7 +60,9 @@ class LTIProvider:
                 message=rr.get("error"),
             )
 
-    def guess(self, assignment_id: AnyIDType, predictions: PredictionsType) -> None:
+    def guess(
+        self, assignment_id: AnyIDType, predictions: PredictionsType
+    ) -> typing.Tuple[float, float]:
         log.debug(
             f"Submitting {len(predictions)} predictions to the provider for grading"
         )
@@ -85,12 +87,17 @@ class LTIProvider:
             raise KerasLTISubmissionConnectionFailedException(
                 self.submission_api_endpoint, e
             ) from None
-        if r.status_code == 200 and rr.get("error") is None:
+        try:
+            assert r.status_code == 200 and rr.get("error") is None
             log.debug(
                 f"Sent {len(predictions)} predictions to the provider for grading"
             )
             log.info(f"Successfully submitted assignment {assignment_id} for grading")
-        else:
+            return (
+                round(rr.get("accuracy"), ndigits=2),
+                round(rr.get("grade"), ndigits=2),
+            )
+        except (AssertionError, KeyError, ValueError, TypeError):
             raise KerasLTISubmissionBadResponseException(
                 api_endpoint=self.submission_api_endpoint,
                 return_code=r.status_code,
@@ -105,7 +112,8 @@ class LTIProvider:
         expected_input_shape: typing.Optional[
             typing.Tuple[typing.Optional[typing.Any], ...]
         ] = None,
-    ) -> None:
+    ) -> typing.Dict[str, typing.Dict[str, float]]:
+        results = dict()
         if isinstance(s, list):
             submissions = s
         else:
@@ -155,4 +163,6 @@ class LTIProvider:
                     prediction = np.argmax(probabilities)
                     predictions[input_hash] = int(prediction)
 
-            self.guess(sub.assignment_id, predictions)
+            accuracy, grade = self.guess(sub.assignment_id, predictions)
+            results[str(sub.assignment_id)] = dict(accuracy=accuracy, grade=grade)
+        return results
