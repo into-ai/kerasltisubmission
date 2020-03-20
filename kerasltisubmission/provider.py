@@ -10,6 +10,7 @@ import requests
 from kerasltisubmission.exceptions import (
     KerasLTISubmissionBadResponseException,
     KerasLTISubmissionConnectionFailedException,
+    KerasLTISubmissionInputException,
     KerasLTISubmissionInvalidSubmissionException,
     KerasLTISubmissionNoInputException,
 )
@@ -101,12 +102,23 @@ class LTIProvider:
         self,
         s: typing.Union["Submission", typing.List["Submission"]],
         verbose: bool = True,
+        expected_input_shape: typing.Optional[
+            typing.Tuple[typing.Optional[typing.Any], ...]
+        ] = None,
     ) -> None:
         if isinstance(s, list):
             submissions = s
         else:
             submissions = [s]
         for sub in submissions:
+
+            if (
+                expected_input_shape
+                and not sub.model.output_shape == expected_input_shape
+            ):
+                raise KerasLTISubmissionInputException(
+                    f"Model has invalid output shape: Got {sub.model.output_shape} but expected {expected_input_shape}"
+                )
 
             # Get assignment inputs and propagate errors
             inputs: InputType = self.request_inputs(sub.assignment_id).get(
@@ -115,6 +127,13 @@ class LTIProvider:
             if not len(inputs) > 0:
                 raise KerasLTISubmissionNoInputException(
                     self.input_api_endpoint, sub.assignment_id
+                )
+
+            input_shape = np.asarray([i.get("matrix") for i in inputs]).shape
+            expected_input_shape = (None, *input_shape[1:])
+            if sub.model.input_shape != expected_input_shape:
+                raise KerasLTISubmissionInputException(
+                    f"Input shape mismatch: Got {sub.model.input_shape} but expected {expected_input_shape}"
                 )
 
             predictions: PredictionsType = dict()

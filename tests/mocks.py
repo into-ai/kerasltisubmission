@@ -15,8 +15,15 @@ class MockRequestsResponse:
 
 
 class MockKerasModel:
-    def __init__(self, predicts: np.ndarray) -> None:
+    def __init__(
+        self,
+        predicts: np.ndarray,
+        input_shape: typing.Optional[typing.Tuple[int]] = None,
+        output_shape: typing.Optional[typing.Tuple[int]] = None,
+    ) -> None:
         self.predicts = predicts
+        self.input_shape = input_shape or (None, 28, 28)
+        self.output_shape = output_shape or (None, 4)
 
     def predict(self, inputs: np.ndarray) -> np.ndarray:
         return [self.predicts for _ in range(len(inputs))]
