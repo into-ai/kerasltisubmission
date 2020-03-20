@@ -10,6 +10,7 @@ import requests
 from kerasltisubmission.exceptions import (
     KerasLTISubmissionBadResponseException,
     KerasLTISubmissionConnectionFailedException,
+    KerasLTISubmissionException,
     KerasLTISubmissionInputException,
     KerasLTISubmissionInvalidSubmissionException,
     KerasLTISubmissionNoInputException,
@@ -105,11 +106,22 @@ class LTIProvider:
                 message=rr.get("error"),
             )
 
+    @staticmethod
+    def safe_shape(
+        shape: typing.Tuple[typing.Optional[typing.Any], ...]
+    ) -> typing.Tuple[int, ...]:
+        escaped = []
+        for dim in shape:
+            escaped.append(-1 if not dim else dim)
+        return tuple(escaped)
+
     def submit(
         self,
         s: typing.Union["Submission", typing.List["Submission"]],
         verbose: bool = True,
-        expected_input_shape: typing.Optional[
+        reshape: bool = True,
+        strict: bool = False,
+        expected_output_shape: typing.Optional[
             typing.Tuple[typing.Optional[typing.Any], ...]
         ] = None,
     ) -> typing.Dict[str, typing.Dict[str, float]]:
@@ -121,11 +133,12 @@ class LTIProvider:
         for sub in submissions:
 
             if (
-                expected_input_shape
-                and not sub.model.output_shape == expected_input_shape
+                strict
+                and expected_output_shape
+                and not sub.model.output_shape == expected_output_shape
             ):
                 raise KerasLTISubmissionInputException(
-                    f"Model has invalid output shape: Got {sub.model.output_shape} but expected {expected_input_shape}"
+                    f"Model has invalid output shape: Got {sub.model.output_shape} but expected {expected_output_shape}"
                 )
 
             # Get assignment inputs and propagate errors
@@ -137,28 +150,34 @@ class LTIProvider:
                     self.input_api_endpoint, sub.assignment_id
                 )
 
-            input_shape = np.asarray([i.get("matrix") for i in inputs]).shape
+            input_matrices = np.asarray([i.get("matrix") for i in inputs])
+            input_shape = input_matrices.shape
             expected_input_shape = (None, *input_shape[1:])
             if sub.model.input_shape != expected_input_shape:
-                raise KerasLTISubmissionInputException(
-                    f"Input shape mismatch: Got {sub.model.input_shape} but expected {expected_input_shape}"
+                output_shape_mismatch = f"Input shape mismatch: Got {sub.model.input_shape} but expected {expected_input_shape}"
+                if not reshape:
+                    raise KerasLTISubmissionInputException(output_shape_mismatch)
+                # Try to reshape
+                log.warning(output_shape_mismatch)
+                input_matrices = input_matrices.reshape(
+                    self.safe_shape(sub.model.input_shape)
                 )
 
             predictions: PredictionsType = dict()
             if not verbose:
-                net_out = sub.model.predict(
-                    np.asarray([i.get("matrix") for i in inputs])
-                )
+                net_out = sub.model.predict(input_matrices)
                 predictions = {
                     str(inputs[i].get("hash")): int(np.argmax(net_out[i]))
                     for i in range(len(inputs))
                 }
             else:
                 errors: typing.List[Exception] = []
-                for i in progressbar.progressbar(inputs, redirect_stdout=True):
+                for i in progressbar.progressbar(
+                    range(len(inputs)), redirect_stdout=True
+                ):
                     try:
-                        input_matrix = i.get("matrix")
-                        input_hash = i.get("hash")
+                        input_matrix = input_matrices[i]
+                        input_hash = inputs[i].get("hash")
                         probabilities = sub.model.predict(
                             np.expand_dims(np.asarray(input_matrix), axis=0)
                         )
@@ -167,6 +186,8 @@ class LTIProvider:
                     except Exception as e:
                         if e not in errors:
                             errors.append(e)
+                if len(errors) > 0:
+                    raise KerasLTISubmissionException()
 
             accuracy, grade = self.guess(sub.assignment_id, predictions)
             results[str(sub.assignment_id)] = dict(accuracy=accuracy, grade=grade)

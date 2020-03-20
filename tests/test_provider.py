@@ -907,6 +907,23 @@ def assignment_input(
             yield mocked_get, mocked_post
 
 
+def test_safe_shape(provider: LTIProvider) -> None:
+    assert provider.safe_shape((None, 28, 28, 1)) == (-1, 28, 28, 1)
+    assert provider.safe_shape((None, None, 28, 1)) == (-1, -1, 28, 1)
+    assert provider.safe_shape((None, 28, 28, None)) == (-1, 28, 28, -1)
+    assert provider.safe_shape((None,)) == (-1,)
+    assert provider.safe_shape((2, 1)) == (2, 1)
+    assert provider.safe_shape(()) == ()
+
+    test = np.zeros(shape=(200, 28, 28))
+    assert test.reshape(provider.safe_shape((None, 28, 28, 1))).shape == (
+        200,
+        28,
+        28,
+        1,
+    )
+
+
 def test_input_request(
     provider: LTIProvider, submission: Submission, prediction_input: PredictionsType
 ) -> None:

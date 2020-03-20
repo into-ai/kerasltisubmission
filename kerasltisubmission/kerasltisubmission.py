@@ -29,10 +29,10 @@ class Submission:
         self.model = model
 
     def submit(
-        self, server: provider.LTIProvider
+        self, server: provider.LTIProvider, verbose: bool = True, reshape: bool = True,
     ) -> typing.Dict[str, typing.Dict[str, float]]:
         # Convenience method, it is preferred to use the server interface in the first place
-        return server.submit(self)
+        return server.submit(self, verbose=verbose, reshape=reshape)
 
     def __eq__(self, other: typing.Any) -> bool:
         if not isinstance(other, Submission):
