@@ -914,7 +914,7 @@ def test_input_request(
     for v in verbosity:
         with assignment_input(
             json_data=dict(success=True, predict=prediction_input),
-            post_json_response=dict(success=True),
+            post_json_response=dict(success=True, grade=0.5, accuracy=0.5),
         ) as (_, mocked_post):
             provider.submit(submission, verbose=v)
             posted = mocked_post.call_args_list
@@ -958,7 +958,7 @@ def test_exception_metadata(
     try:
         with assignment_input(
             json_data=dict(success=True, predict=prediction_input),
-            post_json_response=dict(success=False),
+            post_json_response=dict(success=False, grade=0.5, accuracy=0.5),
         ) as (_, _):
             submission.submit(provider)
     except exceptions.KerasLTISubmissionBadResponseException as e:
@@ -968,7 +968,7 @@ def test_exception_metadata(
     try:
         with assignment_input(
             json_data=dict(success=True, predict=prediction_input),
-            post_json_response=dict(success=False),
+            post_json_response=dict(success=False, grade=0.5, accuracy=0.5),
         ) as (_, mocked_post):
 
             def simulate_connection_error(
