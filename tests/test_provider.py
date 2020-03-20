@@ -32,7 +32,7 @@ def provider() -> LTIProvider:
 def submission() -> Submission:
     """Sample submission"""
     # model = tf.keras.models.load_model(str((Path(__file__).parent / 'mnist.h5').absolute()))
-    model = MockKerasModel(prediction=np.array([0, 2, 4, 6]))
+    model = MockKerasModel(predicts=np.array([0, 2, 4, 6]))
     return Submission(assignment_id=12, model=model)
 
 
@@ -910,26 +910,28 @@ def assignment_input(
 def test_input_request(
     provider: LTIProvider, submission: Submission, prediction_input: PredictionsType
 ) -> None:
-    with assignment_input(
-        json_data=dict(success=True, predict=prediction_input),
-        post_json_response=dict(success=True),
-    ) as (_, mocked_post):
-        provider.submit(submission)
-        posted = mocked_post.call_args_list
-        assert len(posted) == 1
-        mocked_post.assert_called_with(
-            unittest.mock.ANY,
-            data=json.dumps(
-                dict(
-                    predictions={
-                        "408358c06df48a3ade194e09db7b8113a272e072402650c1e283433cd75c9953": 3
-                    },
-                    user_token=provider.user_token,
-                    assignment_id=submission.assignment_id,
-                )
-            ),
-            headers=unittest.mock.ANY,
-        )
+    verbosity = [True, False]
+    for v in verbosity:
+        with assignment_input(
+            json_data=dict(success=True, predict=prediction_input),
+            post_json_response=dict(success=True),
+        ) as (_, mocked_post):
+            provider.submit(submission, verbose=v)
+            posted = mocked_post.call_args_list
+            assert len(posted) == 1
+            mocked_post.assert_called_with(
+                unittest.mock.ANY,
+                data=json.dumps(
+                    dict(
+                        predictions={
+                            "408358c06df48a3ade194e09db7b8113a272e072402650c1e283433cd75c9953": 3
+                        },
+                        user_token=provider.user_token,
+                        assignment_id=submission.assignment_id,
+                    )
+                ),
+                headers=unittest.mock.ANY,
+            )
 
 
 def test_no_input_raises(provider: LTIProvider, submission: Submission) -> None:

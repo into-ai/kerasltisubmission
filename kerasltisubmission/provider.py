@@ -22,6 +22,7 @@ log.addHandler(logging.NullHandler())
 
 AnyIDType = typing.Union[str, int]
 InputsType = typing.List[typing.Dict[str, typing.Any]]
+InputType = typing.List[typing.Dict[str, typing.Any]]
 PredictionsType = typing.Dict[str, typing.Any]
 
 
@@ -36,9 +37,7 @@ class LTIProvider:
         self.input_api_endpoint = input_api_endpoint
         self.submission_api_endpoint = submission_api_endpoint
 
-    def request_inputs(
-        self, assignment_id: AnyIDType
-    ) -> typing.Dict[str, PredictionsType]:
+    def request_inputs(self, assignment_id: AnyIDType) -> typing.Dict[str, InputsType]:
         try:
             r = requests.get(
                 f"{self.input_api_endpoint}/assignment/{assignment_id}/inputs"
@@ -46,7 +45,7 @@ class LTIProvider:
             rr = r.json()
         except Exception as e:
             raise KerasLTISubmissionConnectionFailedException(
-                self.submission_api_endpoint, e
+                self.input_api_endpoint, e
             ) from None
         if r.status_code == 200 and rr.get("success", True) is True:
             inputs = rr.get("predict")
@@ -81,6 +80,7 @@ class LTIProvider:
             )
             rr = r.json()
         except Exception as e:
+            log.error(e)
             raise KerasLTISubmissionConnectionFailedException(
                 self.submission_api_endpoint, e
             ) from None
@@ -97,7 +97,11 @@ class LTIProvider:
                 message=rr.get("error"),
             )
 
-    def submit(self, s: typing.Union["Submission", typing.List["Submission"]]) -> None:
+    def submit(
+        self,
+        s: typing.Union["Submission", typing.List["Submission"]],
+        verbose: bool = True,
+    ) -> None:
         if isinstance(s, list):
             submissions = s
         else:
@@ -105,23 +109,31 @@ class LTIProvider:
         for sub in submissions:
 
             # Get assignment inputs and propagate errors
-            inputs: PredictionsType = self.request_inputs(sub.assignment_id).get(
-                "predict", dict()
+            inputs: InputType = self.request_inputs(sub.assignment_id).get(
+                "predict", list()
             )
             if not len(inputs) > 0:
                 raise KerasLTISubmissionNoInputException(
                     self.input_api_endpoint, sub.assignment_id
                 )
 
-            # Build prediction mapping
             predictions: PredictionsType = dict()
-            for i in progressbar.progressbar(inputs, redirect_stdout=True):
-                input_matrix = i.get("matrix")
-                input_hash = i.get("hash")
-                probabilities = sub.model.predict(
-                    np.expand_dims(np.asarray(input_matrix), axis=0)
+            if not verbose:
+                net_out = sub.model.predict(
+                    np.asarray([i.get("matrix") for i in inputs])
                 )
-                prediction = np.argmax(probabilities)
-                predictions[input_hash] = int(prediction)
+                predictions = {
+                    str(inputs[i].get("hash")): int(np.argmax(net_out[i]))
+                    for i in range(len(inputs))
+                }
+            else:
+                for i in progressbar.progressbar(inputs, redirect_stdout=True):
+                    input_matrix = i.get("matrix")
+                    input_hash = i.get("hash")
+                    probabilities = sub.model.predict(
+                        np.expand_dims(np.asarray(input_matrix), axis=0)
+                    )
+                    prediction = np.argmax(probabilities)
+                    predictions[input_hash] = int(prediction)
 
             self.guess(sub.assignment_id, predictions)

@@ -15,8 +15,8 @@ class MockRequestsResponse:
 
 
 class MockKerasModel:
-    def __init__(self, prediction: np.ndarray) -> None:
-        self.prediction = prediction
+    def __init__(self, predicts: np.ndarray) -> None:
+        self.predicts = predicts
 
-    def predict(self, _: np.ndarray) -> np.ndarray:
-        return self.prediction
+    def predict(self, inputs: np.ndarray) -> np.ndarray:
+        return [self.predicts for _ in range(len(inputs))]

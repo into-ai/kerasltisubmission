@@ -32,13 +32,14 @@ print("Model accuracy: %.2f" % eval_accuracy)
 provider = LTIProvider(
     input_api_endpoint="http://localhost:8080",
     submission_api_endpoint="http://localhost:8080/submit",
-    user_token="24afe42c-318d-483e-a580-9adf8a48e7e4",
+    user_token="<your-token>",
 )
 
 submission = Submission(assignment_id=2, model=model)
 
 try:
-    provider.submit(submission)
+    provider.submit(submission, verbose=False)
+    print("Submission was successful!")
 except KerasLTISubmissionBadResponseException as e:
     print(e.message)
 except Exception as e:
