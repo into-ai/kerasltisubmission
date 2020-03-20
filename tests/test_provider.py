@@ -15,7 +15,7 @@ import requests
 from kerasltisubmission import exceptions
 from kerasltisubmission.kerasltisubmission import Submission
 from kerasltisubmission.provider import InputsType, LTIProvider, PredictionsType
-from tests.mocks import JSONType, MockKerasModel, MockRequestsResponse
+from tests.mocks import JSONType, MockRequestsResponse, mocked_keras_model
 
 
 @pytest.fixture  # type: ignore
@@ -32,7 +32,7 @@ def provider() -> LTIProvider:
 def submission() -> Submission:
     """Sample submission"""
     # model = tf.keras.models.load_model(str((Path(__file__).parent / 'mnist.h5').absolute()))
-    model = MockKerasModel(predicts=np.array([0, 2, 4, 6]))
+    model = mocked_keras_model(predicts=np.array([0, 2, 4, 6]))
     return Submission(assignment_id=12, model=model)
 
 

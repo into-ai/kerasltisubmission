@@ -1,5 +1,7 @@
 import typing
+import unittest.mock
 
+import keras
 import numpy as np
 
 JSONType = typing.Dict[str, typing.Any]
@@ -14,16 +16,16 @@ class MockRequestsResponse:
         return self.json_data
 
 
-class MockKerasModel:
-    def __init__(
-        self,
-        predicts: np.ndarray,
-        input_shape: typing.Optional[typing.Tuple[int]] = None,
-        output_shape: typing.Optional[typing.Tuple[int]] = None,
-    ) -> None:
-        self.predicts = predicts
-        self.input_shape = input_shape or (None, 28, 28)
-        self.output_shape = output_shape or (None, 4)
+def mocked_keras_model(
+    predicts: np.ndarray,
+    input_shape: typing.Optional[typing.Tuple[int]] = None,
+    output_shape: typing.Optional[typing.Tuple[int]] = None,
+) -> unittest.mock.MagicMock:
+    def mock_predict(inputs: np.ndarray) -> np.ndarray:
+        return [predicts for _ in range(len(inputs))]
 
-    def predict(self, inputs: np.ndarray) -> np.ndarray:
-        return [self.predicts for _ in range(len(inputs))]
+    model = unittest.mock.Mock(spec=keras.Model)
+    model.predict.side_effect = mock_predict
+    model.input_shape = input_shape or (None, 28, 28)
+    model.output_shape = output_shape or (None, len(predicts))
+    return model

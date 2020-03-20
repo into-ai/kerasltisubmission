@@ -154,14 +154,19 @@ class LTIProvider:
                     for i in range(len(inputs))
                 }
             else:
+                errors: typing.List[Exception] = []
                 for i in progressbar.progressbar(inputs, redirect_stdout=True):
-                    input_matrix = i.get("matrix")
-                    input_hash = i.get("hash")
-                    probabilities = sub.model.predict(
-                        np.expand_dims(np.asarray(input_matrix), axis=0)
-                    )
-                    prediction = np.argmax(probabilities)
-                    predictions[input_hash] = int(prediction)
+                    try:
+                        input_matrix = i.get("matrix")
+                        input_hash = i.get("hash")
+                        probabilities = sub.model.predict(
+                            np.expand_dims(np.asarray(input_matrix), axis=0)
+                        )
+                        prediction = np.argmax(probabilities)
+                        predictions[input_hash] = int(prediction)
+                    except Exception as e:
+                        if e not in errors:
+                            errors.append(e)
 
             accuracy, grade = self.guess(sub.assignment_id, predictions)
             results[str(sub.assignment_id)] = dict(accuracy=accuracy, grade=grade)

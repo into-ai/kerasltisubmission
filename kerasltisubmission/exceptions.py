@@ -9,6 +9,10 @@ class KerasLTISubmissionBaseException(Exception):
     pass
 
 
+class KerasLTISubmissionBadModelException(KerasLTISubmissionBaseException):
+    pass
+
+
 class KerasLTISubmissionInputException(KerasLTISubmissionBaseException):
     def __init__(self, message: typing.Optional[str] = None) -> None:
         super().__init__(message or "Exception while loading assignment input data")
