@@ -35,13 +35,16 @@ provider = LTIProvider(
     user_token="<your-token>",
 )
 
-submission = Submission(assignment_id=2, model=model)
+submission = Submission(assignment_id=0, model=model)
 
 try:
-    provider.submit(submission, verbose=False)
-    print("Submission was successful!")
+    results = provider.submit(submission, verbose=False)
+    for assignment_id, result in results.items():
+        print(f"Submission was successful for assignment {assignment_id}!")
+        print(f"    Your model has an accuracy of {result.get('accuracy') * 100}% on our validation data.")
+        print(f"    You received a score of {result.get('grade') * 100}%")
 except KerasLTISubmissionBadResponseException as e:
     print(e.message)
+    raise e
 except Exception as e:
-    print(str(e))
-
+    raise e
