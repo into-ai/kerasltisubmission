@@ -3,28 +3,35 @@
 """Main module."""
 
 import typing
-
-import keras
-from tensorflow import keras as tfkeras
+from typing import TYPE_CHECKING
 
 import kerasltisubmission.provider as provider
 from kerasltisubmission.exceptions import KerasLTISubmissionBadModelException
 
-# from typing import TYPE_CHECKING
-
-
-# if TYPE_CHECKING:  # pragma: no cover
-#    import keras
+if TYPE_CHECKING:  # pragma: no cover
+    from tensorflow import keras as _tfkeras  # noqa: F401
+    import keras as _keras  # noqa: F401
 
 
 class Submission:
     def __init__(
         self,
         assignment_id: provider.AnyIDType,
-        model: typing.Union[keras.Model, tfkeras.Model],
+        model: typing.Union["_keras.Model", "_tfkeras.Model"],
     ) -> None:
         self.assignment_id = assignment_id
-        if not (isinstance(model, keras.Model) or isinstance(model, tfkeras.Model)):
+        valid_model = True
+        try:
+            import keras
+            from tensorflow import keras as tfkeras
+
+            valid_model = isinstance(model, keras.Model) or isinstance(
+                model, tfkeras.Model
+            )
+        except ImportError:
+            pass
+
+        if not valid_model:
             raise KerasLTISubmissionBadModelException("Model must be a keras model!")
         self.model = model
 

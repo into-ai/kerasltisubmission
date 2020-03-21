@@ -23,7 +23,7 @@ try:
 except (ImportError, AssertionError):
     long_description = short_description
 
-requirements = ["numpy", "progressbar2", "keras", "tensorflow==2.1.0"]
+requirements = ["numpy", "progressbar2"]
 test_requirements = [
     "tox",
     "pytest",
@@ -32,6 +32,8 @@ test_requirements = [
     "pytest-sugar",
     "mypy",
     "pyfakefs",
+    "keras",
+    "tensorflow==2.1.0",
 ]
 coverage_requirements = ["coverage", "codecov"]
 docs_requirements = ["sphinx>=2.0", "romnnn_sphinx_press_theme", "sphinxemoji"]
