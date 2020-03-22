@@ -37,3 +37,4 @@ tensorflow = "==2.1.0"
 kerasltisubmission = {path = ".",editable = true}
 numpy = "*"
 progressbar2 = "*"
+requests = "*"

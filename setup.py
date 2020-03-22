@@ -23,7 +23,7 @@ try:
 except (ImportError, AssertionError):
     long_description = short_description
 
-requirements = ["numpy", "progressbar2"]
+requirements = ["numpy", "progressbar2", "requests"]
 test_requirements = [
     "tox",
     "pytest",
