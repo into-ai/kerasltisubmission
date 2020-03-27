@@ -896,9 +896,27 @@ def assignment_input(
     post_json_status_code: int = 200,
 ) -> typing.Iterator[typing.Tuple[unittest.mock.Mock, unittest.mock.Mock]]:
     with unittest.mock.patch("requests.get", autospec=True) as mocked_get:
-        mocked_get.return_value = MockRequestsResponse(
-            json_data=json_data or dict(), status_code=status_code
-        )
+
+        def mock_response(
+            *args: typing.Any, **kwargs: typing.Any
+        ) -> MockRequestsResponse:
+            print(args, kwargs)
+            url = args[0]
+            if url[-12:] == "/assignments":
+                return MockRequestsResponse(
+                    json_data=dict(
+                        assignments=[
+                            dict(validation_set_size=len(json_data.get("predict")))
+                        ]
+                    ),
+                    status_code=status_code,
+                )
+            else:
+                return MockRequestsResponse(
+                    json_data=json_data or dict(), status_code=status_code
+                )
+
+        mocked_get.side_effect = mock_response
         with unittest.mock.patch("requests.post", autospec=True) as mocked_post:
             mocked_post.return_value = MockRequestsResponse(
                 json_data=post_json_response or dict(),

@@ -13,12 +13,11 @@ if TYPE_CHECKING:  # pragma: no cover
     import keras as _keras  # noqa: F401
 
 
+ModelType = typing.Union["_keras.Model", "_tfkeras.Model"]
+
+
 class Submission:
-    def __init__(
-        self,
-        assignment_id: provider.AnyIDType,
-        model: typing.Union["_keras.Model", "_tfkeras.Model"],
-    ) -> None:
+    def __init__(self, assignment_id: provider.AnyIDType, model: ModelType,) -> None:
         self.assignment_id = assignment_id
         valid_model = True
         try:
