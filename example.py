@@ -38,6 +38,7 @@ provider = LTIProvider(
 submission = Submission(assignment_id=0, model=model)
 
 try:
+    print(f"Checking your model...")
     results = provider.submit(submission, verbose=False)
     for assignment_id, result in results.items():
         print(f"Submission was successful for assignment {assignment_id}!")

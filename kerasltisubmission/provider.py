@@ -1,6 +1,7 @@
 import json
 import logging
 import typing
+from typing import TYPE_CHECKING
 
 import numpy as np
 import progressbar
@@ -16,12 +17,17 @@ from kerasltisubmission.exceptions import (
     KerasLTISubmissionNoInputException,
 )
 
+if TYPE_CHECKING:  # pragma: no cover
+    from kerasltisubmission import Submission  # noqa: F401
+    from kerasltisubmission.kerasltisubmission import ModelType  # noqa: F401
+
+
 log = logging.getLogger("kerasltisubmission")
 log.addHandler(logging.NullHandler())
 
 AnyIDType = typing.Union[str, int]
-InputsType = typing.List[typing.Dict[str, typing.Any]]
-InputType = typing.List[typing.Dict[str, typing.Any]]
+SingleInputType = typing.Dict[str, typing.Any]
+InputsType = typing.List[SingleInputType]
 PredictionsType = typing.Dict[str, typing.Any]
 
 
@@ -38,7 +44,7 @@ class LTIProvider:
 
     def expects_partial_inputs(
         self, assignment_id: AnyIDType
-    ) -> typing.Tuple[bool, int]:
+    ) -> typing.Tuple[bool, typing.Optional[int]]:
         try:
             r = requests.get(f"{self.input_api_endpoint}/assignments")
             rr = r.json()
@@ -51,15 +57,18 @@ class LTIProvider:
         if r.status_code == 200:
             all_assignments = rr.get("assignments")
             assignments = [
-                a for a in all_assignments if a.get("identifier") == str(assignment_id)
+                a
+                for a in all_assignments
+                if str(a.get("identifier")) == str(assignment_id)
             ]
             if len(assignments) > 0:
-                validation_set_size = assignments[0].get("validation_set_size")
+                try:
+                    validation_set_size = int(assignments[0].get("validation_set_size"))
+                except ValueError:
+                    pass
                 if validation_set_size:
                     is_partial = assignments[0].get("partial_loading", False)
         return is_partial, validation_set_size
-
-    # def request_inputs(self, assignment_id: AnyIDType) -> typing.Dict[str, InputsType]:
 
     def guess(
         self, assignment_id: AnyIDType, predictions: PredictionsType
@@ -106,9 +115,26 @@ class LTIProvider:
                 message=rr.get("error"),
             )
 
-    @staticmethod
+    @classmethod
+    def perform_reshape(
+        cls,
+        model: "ModelType",
+        input_matrix: np.ndarray,
+        reshape: typing.Optional[bool] = True,
+    ) -> np.ndarray:
+        input_shape = input_matrix.shape
+        expected_input_shape = (None, *input_shape[1:])
+        if model.input_shape != expected_input_shape:
+            output_shape_mismatch = f"Input shape mismatch: Got {model.input_shape} but expected {expected_input_shape}"
+            if reshape is not True:
+                raise KerasLTISubmissionInputException(output_shape_mismatch)
+            # Try to reshape
+            log.warning(output_shape_mismatch)
+            return input_matrix.reshape(cls.safe_shape(model.input_shape))
+
+    @classmethod
     def safe_shape(
-        shape: typing.Tuple[typing.Optional[typing.Any], ...]
+        cls, shape: typing.Tuple[typing.Optional[typing.Any], ...]
     ) -> typing.Tuple[int, ...]:
         escaped = []
         for dim in shape:
@@ -119,8 +145,8 @@ class LTIProvider:
         self,
         s: typing.Union["Submission", typing.List["Submission"]],
         verbose: bool = True,
-        reshape: bool = True,
         strict: bool = False,
+        reshape: bool = False,
         expected_output_shape: typing.Optional[
             typing.Tuple[typing.Optional[typing.Any], ...]
         ] = None,
@@ -152,34 +178,34 @@ class LTIProvider:
                     self.input_api_endpoint, sub.assignment_id
                 )
 
-            """
-            while True:
-
-                loaded_input = assignment_loader.load_next()
-                if loaded_input is None:
-                    break
-
-                input_matrix = np.asarray(loaded_input.get("matrix"))
-                input_shape = input_matrix.shape
-                expected_input_shape = (None, *input_shape[1:])
-                if sub.model.input_shape != expected_input_shape:
-                    output_shape_mismatch = f"Input shape mismatch: Got {sub.model.input_shape} but expected {expected_input_shape}"
-                    if not reshape:
-                        raise KerasLTISubmissionInputException(output_shape_mismatch)
-                    # Try to reshape
-                    log.warning(output_shape_mismatch)
-                    input_matrix = input_matrix.reshape(
-                        self.safe_shape(sub.model.input_shape)
-                    )
-
-                
-            """
             predictions: PredictionsType = dict()
 
-            if not verbose:
-                pass
-                # net_out = sub.model.predict(input_matrix)
-                #predictions[str(loaded_input.get("hash"))] = int(np.argmax(net_out[0]))
+            if not verbose or validation_set_size is None:
+                # Collect all input matrices
+                collected: "InputsType" = []
+                while True:
+                    if (
+                        validation_set_size is not None
+                        and len(collected) >= validation_set_size
+                    ):
+                        break
+                    try:
+                        loaded_input = assignment_loader.load_next()
+                    except (
+                        KerasLTISubmissionConnectionFailedException,
+                        KerasLTISubmissionBadResponseException,
+                    ):
+                        break
+                    if loaded_input is None:
+                        break
+                    collected.append(loaded_input)
+                net_out = sub.model.predict(
+                    np.array([np.asarray(c.get("matrix")) for c in collected])
+                )
+                predictions = {
+                    str(c.get("hash")): int(np.argmax(pred))
+                    for c, pred in zip(collected, net_out)
+                }
             else:
                 errors: typing.List[Exception] = []
                 for i in progressbar.progressbar(
@@ -195,12 +221,13 @@ class LTIProvider:
                             np.expand_dims(np.asarray(input_matrix), axis=0)
                         )
                         prediction = np.argmax(probabilities)
-                        predictions[input_hash] = int(prediction)
+                        if input_hash:
+                            predictions[input_hash] = int(prediction)
                     except Exception as e:
+                        raise e
                         if e not in errors:
                             errors.append(e)
                 if len(errors) > 0:
-                    print(errors)
                     raise KerasLTISubmissionException()
 
             accuracy, grade = self.guess(sub.assignment_id, predictions)
