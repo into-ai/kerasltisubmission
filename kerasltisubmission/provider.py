@@ -1,15 +1,10 @@
 import json
 import logging
 import typing
-from typing import TYPE_CHECKING
 
 import numpy as np
 import progressbar
 import requests
-
-if TYPE_CHECKING:  # pragma: no cover
-    from kerasltisubmission.provider import AnyIDType, InputType  # noqa: F401
-
 
 from kerasltisubmission import loader
 from kerasltisubmission.exceptions import (
@@ -157,6 +152,7 @@ class LTIProvider:
                     self.input_api_endpoint, sub.assignment_id
                 )
 
+            """
             while True:
 
                 loaded_input = assignment_loader.load_next()
@@ -176,28 +172,36 @@ class LTIProvider:
                         self.safe_shape(sub.model.input_shape)
                     )
 
-                predictions: PredictionsType = dict()
-                if not verbose:
-                    net_out = sub.model.predict(input_matrix)
-                    predictions[str(loaded_input.get("hash"))] = int(np.argmax(net_out[0]))
-                else:
-                    errors: typing.List[Exception] = []
-                    for i in progressbar.progressbar(
-                        range(validation_set_size), redirect_stdout=True
-                    ):
-                        try:
-                            input_matrix = input_matrix[i]
-                            input_hash = input_matrix[i].get("hash")
-                            probabilities = sub.model.predict(
-                                np.expand_dims(np.asarray(input_matrix), axis=0)
-                            )
-                            prediction = np.argmax(probabilities)
-                            predictions[input_hash] = int(prediction)
-                        except Exception as e:
-                            if e not in errors:
-                                errors.append(e)
-                    if len(errors) > 0:
-                        raise KerasLTISubmissionException()
+                
+            """
+            predictions: PredictionsType = dict()
+
+            if not verbose:
+                pass
+                # net_out = sub.model.predict(input_matrix)
+                #predictions[str(loaded_input.get("hash"))] = int(np.argmax(net_out[0]))
+            else:
+                errors: typing.List[Exception] = []
+                for i in progressbar.progressbar(
+                    range(validation_set_size), redirect_stdout=True
+                ):
+                    loaded_input = assignment_loader.load_next()
+                    if loaded_input is None:
+                        raise KerasLTISubmissionInputException(f"Missing input {i}")
+                    try:
+                        input_matrix = loaded_input.get("matrix")
+                        input_hash = loaded_input.get("hash")
+                        probabilities = sub.model.predict(
+                            np.expand_dims(np.asarray(input_matrix), axis=0)
+                        )
+                        prediction = np.argmax(probabilities)
+                        predictions[input_hash] = int(prediction)
+                    except Exception as e:
+                        if e not in errors:
+                            errors.append(e)
+                if len(errors) > 0:
+                    print(errors)
+                    raise KerasLTISubmissionException()
 
             accuracy, grade = self.guess(sub.assignment_id, predictions)
             results[str(sub.assignment_id)] = dict(accuracy=accuracy, grade=grade)

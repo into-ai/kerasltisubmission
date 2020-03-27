@@ -12,11 +12,6 @@ from kerasltisubmission.exceptions import (
 if TYPE_CHECKING:  # pragma: no cover
     from kerasltisubmission.provider import AnyIDType, InputType  # noqa: F401
 
-AnyIDType = typing.Union[str, int]
-InputsType = typing.List[typing.Dict[str, typing.Any]]
-InputType = typing.List[typing.Dict[str, typing.Any]]
-PredictionsType = typing.Dict[str, typing.Any]
-
 
 class InputLoader(abc.ABC):
     def __init__(self, assignment_id: "AnyIDType", input_api_endpoint: str) -> None:
@@ -31,13 +26,13 @@ class InputLoader(abc.ABC):
 
 
 class PartialLoader(InputLoader):
-    def __init__(self, assignment_id: AnyIDType, input_api_endpoint: str) -> None:
+    def __init__(self, assignment_id: "AnyIDType", input_api_endpoint: str) -> None:
         super().__init__(assignment_id, input_api_endpoint)
         self.input_api_endpoint = input_api_endpoint
         self.currentIndex = 0
-        self.batched = list()
+        self.batched: typing.List["InputType"] = list()
 
-    def load_batch(self, input_id: int) -> "PredictionsType":
+    def load_batch(self, input_id: int) -> typing.List["InputType"]:
         try:
             r = requests.get(
                 f"{self.input_api_endpoint}/assignment/{self.assignment_id}/inputs/{input_id}"
@@ -57,7 +52,7 @@ class PartialLoader(InputLoader):
                 message=rr.get("error"),
             )
 
-    def load_next(self) -> InputType:
+    def load_next(self) -> "InputType":
         self.batched += self.load_batch(self.currentIndex)
         n = (
             None
@@ -72,7 +67,7 @@ class PartialLoader(InputLoader):
 
 
 class TotalLoader(InputLoader):
-    def __init__(self, assignment_id: AnyIDType, input_api_endpoint: str) -> None:
+    def __init__(self, assignment_id: "AnyIDType", input_api_endpoint: str) -> None:
         try:
             r = requests.get(f"{input_api_endpoint}/assignment/{assignment_id}/inputs")
             rr = r.json()
@@ -91,7 +86,7 @@ class TotalLoader(InputLoader):
                 message=rr.get("error"),
             )
 
-    def load_next(self) -> InputType:
+    def load_next(self) -> "InputType":
         n = (
             None
             if self.currentIndex >= len(self.inputs)

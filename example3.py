@@ -4,7 +4,7 @@ import tensorflow.keras as keras
 from kerasltisubmission import LTIProvider, Submission
 from kerasltisubmission.exceptions import KerasLTISubmissionBadResponseException
 
-model = keras.models.load_model('/home/hendrik/Downloads/mymodel.h5')
+model = keras.models.load_model('mymodel.h5')
 
 # See https://github.com/into-ai/kerasltiprovider
 provider = LTIProvider(
