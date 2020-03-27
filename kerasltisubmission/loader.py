@@ -1,4 +1,5 @@
 import abc
+import typing
 from typing import TYPE_CHECKING
 
 import requests
@@ -10,6 +11,11 @@ from kerasltisubmission.exceptions import (
 
 if TYPE_CHECKING:  # pragma: no cover
     from kerasltisubmission.provider import AnyIDType, InputType  # noqa: F401
+
+AnyIDType = typing.Union[str, int]
+InputsType = typing.List[typing.Dict[str, typing.Any]]
+InputType = typing.List[typing.Dict[str, typing.Any]]
+PredictionsType = typing.Dict[str, typing.Any]
 
 
 class InputLoader(abc.ABC):
