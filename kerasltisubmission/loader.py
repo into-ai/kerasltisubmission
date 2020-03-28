@@ -59,16 +59,19 @@ class PartialLoader(InputLoader):
             )
 
     def load_next(self) -> typing.Optional["SingleInputType"]:
-        if self.currentIndex >= len(self.batched):
-            # Grow batched
-            self.batched += self.load_batch(self.batchIndex)
-            self.batchIndex += 1
+        if self.batchIndex >= len(self.batched):
+            if len(self.batched) == 0:
+                self.batched = self.load_batch(0)
+            else:
+                self.batched = self.load_batch(self.currentIndex//len(self.batched))
+            self.batchIndex = 0
         n = (
             None
-            if self.currentIndex >= len(self.batched)
-            else self.batched[self.currentIndex]
+            if self.batchIndex >= len(self.batched)
+            else self.batched[self.batchIndex]
         )
         self.currentIndex += 1
+        self.batchIndex += 1
         return n
 
     def is_empty(self) -> bool:
