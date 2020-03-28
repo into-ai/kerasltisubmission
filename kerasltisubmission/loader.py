@@ -63,7 +63,7 @@ class PartialLoader(InputLoader):
             if len(self.batched) == 0:
                 self.batched = self.load_batch(0)
             else:
-                self.batched = self.load_batch(self.currentIndex//len(self.batched))
+                self.batched = self.load_batch(self.currentIndex // len(self.batched))
             self.batchIndex = 0
         n = (
             None

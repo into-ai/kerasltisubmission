@@ -44,7 +44,7 @@ class LTIProvider:
 
     def get_validation_set_size(self, assignment_id: AnyIDType) -> typing.Optional[int]:
         try:
-            r = requests.post(
+            r = requests.get(
                 f"{self.input_api_endpoint}/assignment/{assignment_id}/size"
             )
             rr = r.json()
@@ -213,6 +213,7 @@ class LTIProvider:
                         if input_hash:
                             predictions[input_hash] = int(prediction)
                     except Exception as e:
+                        raise e
                         if e not in errors:
                             errors.append(e)
                 if len(errors) > 0:

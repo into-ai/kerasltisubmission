@@ -900,14 +900,11 @@ def assignment_input(
         def mock_response(
             *args: typing.Any, **kwargs: typing.Any
         ) -> MockRequestsResponse:
-            print(args, kwargs)
             url = args[0]
-            if url[-12:] == "/assignments":
+            if url[-5:] == "/size":
                 return MockRequestsResponse(
                     json_data=dict(
-                        assignments=[
-                            dict(validation_set_size=len(json_data.get("predict")))
-                        ]
+                        size=len(json_data.get("predict"))
                     ),
                     status_code=status_code,
                 )
