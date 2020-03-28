@@ -178,13 +178,7 @@ class LTIProvider:
                         and len(collected) >= validation_set_size
                     ):
                         break
-                    try:
-                        loaded_input = assignment_loader.load_next()
-                    except (
-                        KerasLTISubmissionConnectionFailedException,
-                        KerasLTISubmissionBadResponseException,
-                    ):
-                        break
+                    loaded_input = assignment_loader.load_next()
                     if loaded_input is None:
                         break
                     collected.append(loaded_input)

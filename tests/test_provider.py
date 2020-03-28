@@ -890,8 +890,8 @@ def prediction_input() -> InputsType:
 
 @contextmanager
 def assignment_input(
-    json_data: JSONType = None,
-    post_json_response: JSONType = None,
+    json_data: JSONType,
+    post_json_response: typing.Optional[JSONType] = None,
     status_code: int = 200,
     post_json_status_code: int = 200,
 ) -> typing.Iterator[typing.Tuple[unittest.mock.Mock, unittest.mock.Mock]]:
@@ -903,9 +903,7 @@ def assignment_input(
             url = args[0]
             if url[-5:] == "/size":
                 return MockRequestsResponse(
-                    json_data=dict(
-                        size=len(json_data.get("predict"))
-                    ),
+                    json_data=dict(size=len(json_data.get("predict"))),  # type: ignore
                     status_code=status_code,
                 )
             else:
