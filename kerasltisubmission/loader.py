@@ -83,6 +83,11 @@ class PartialLoader(InputLoader):
 
 
 class TotalLoader(InputLoader):
+    """ Loads the entire validation set.
+        This is marked deprecated due to performance implications
+
+    """
+
     def __init__(self, assignment_id: "AnyIDType", input_api_endpoint: str) -> None:
         try:
             r = requests.get(f"{input_api_endpoint}/assignment/{assignment_id}/inputs")
@@ -101,6 +106,7 @@ class TotalLoader(InputLoader):
                 assignment_id=assignment_id,
                 message=rr.get("error"),
             )
+        raise DeprecationWarning
 
     def load_next(self) -> typing.Optional["SingleInputType"]:
         n = (

@@ -42,33 +42,23 @@ class LTIProvider:
         self.input_api_endpoint = input_api_endpoint
         self.submission_api_endpoint = submission_api_endpoint
 
-    def expects_partial_inputs(
-        self, assignment_id: AnyIDType
-    ) -> typing.Tuple[bool, typing.Optional[int]]:
+    def get_validation_set_size(self, assignment_id: AnyIDType) -> typing.Optional[int]:
         try:
-            r = requests.get(f"{self.input_api_endpoint}/assignments")
+            r = requests.post(
+                f"{self.input_api_endpoint}/assignment/{assignment_id}/size"
+            )
             rr = r.json()
         except Exception as e:
             raise KerasLTISubmissionConnectionFailedException(
                 self.input_api_endpoint, e
             ) from None
-        is_partial = False
         validation_set_size = None
         if r.status_code == 200:
-            all_assignments = rr.get("assignments")
-            assignments = [
-                a
-                for a in all_assignments
-                if str(a.get("identifier")) == str(assignment_id)
-            ]
-            if len(assignments) > 0:
-                try:
-                    validation_set_size = int(assignments[0].get("validation_set_size"))
-                except ValueError:
-                    pass
-                if validation_set_size:
-                    is_partial = assignments[0].get("partial_loading", False)
-        return is_partial, validation_set_size
+            try:
+                validation_set_size = int(rr.get("size"))
+            except ValueError:
+                pass
+        return validation_set_size
 
     def guess(
         self, assignment_id: AnyIDType, predictions: PredictionsType
@@ -168,11 +158,10 @@ class LTIProvider:
                 )
 
             # Get assignment inputs and propagate errors
-            is_partial, validation_set_size = self.expects_partial_inputs(
-                sub.assignment_id
+            validation_set_size = self.get_validation_set_size(sub.assignment_id)
+            assignment_loader = loader.PartialLoader(
+                sub.assignment_id, self.input_api_endpoint
             )
-            loader_cls = loader.PartialLoader if is_partial else loader.TotalLoader
-            assignment_loader = loader_cls(sub.assignment_id, self.input_api_endpoint)
             if assignment_loader.is_empty():
                 raise KerasLTISubmissionNoInputException(
                     self.input_api_endpoint, sub.assignment_id
@@ -224,7 +213,6 @@ class LTIProvider:
                         if input_hash:
                             predictions[input_hash] = int(prediction)
                     except Exception as e:
-                        raise e
                         if e not in errors:
                             errors.append(e)
                 if len(errors) > 0:
