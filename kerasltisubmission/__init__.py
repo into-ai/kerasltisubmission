@@ -4,7 +4,7 @@
 
 __author__ = """into-ai"""
 __email__ = "introintoai@gmail.com"
-__version__ = "0.4.7"
+__version__ = "0.4.8"
 
 from kerasltisubmission.kerasltisubmission import Submission as _Submission
 from kerasltisubmission.provider import AnyIDType as _AnyIDType
