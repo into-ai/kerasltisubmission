@@ -31,7 +31,7 @@ m2r = "*"
 twine = "*"
 bump2version = "*"
 keras = "*"
-tensorflow = "==2.1.0"
+tensorflow = ">=2.1.0"
 
 [packages]
 kerasltisubmission = {path = ".",editable = true}
